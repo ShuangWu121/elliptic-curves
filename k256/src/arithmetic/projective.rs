@@ -3,6 +3,7 @@
 #![allow(clippy::op_ref)]
 
 use super::{AffinePoint, CURVE_EQUATION_B_SINGLE, FieldElement, Scalar};
+use crate::arithmetic::mul::{Endomorphism, Identity};
 use crate::{CompressedPoint, EncodedPoint, PublicKey, Secp256k1};
 use core::{
     iter::Sum,
@@ -25,7 +26,7 @@ use elliptic_curve::{ops::BatchInvert, point::NonIdentity};
 use alloc::vec::Vec;
 
 #[rustfmt::skip]
-const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
+pub const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x7a, 0xe9, 0x6a, 0x2b, 0x65, 0x7c, 0x07, 0x10,
     0x6e, 0x64, 0x47, 0x9e, 0xac, 0x34, 0x34, 0xe9,
     0x9c, 0xf0, 0x49, 0x75, 0x12, 0xf5, 0x89, 0x95,
@@ -38,6 +39,24 @@ pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,
     pub(super) z: FieldElement,
+}
+
+impl Endomorphism for ProjectivePoint {
+    /// Calculates SECP256k1 endomorphism: `self * lambda`.
+    fn endomorphism(&self) -> Self {
+        Self {
+            x: self.x * &ENDOMORPHISM_BETA,
+            y: self.y,
+            z: self.z,
+        }
+    }
+}
+
+impl Identity for ProjectivePoint {
+    /// "point at infinity".
+    fn identity() -> Self {
+        Self::IDENTITY
+    }
 }
 
 impl ProjectivePoint {
